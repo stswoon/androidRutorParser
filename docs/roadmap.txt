@@ -1,0 +1,25 @@
+RutorParser v.0
+  hardcoded source - http://rutor1.org/
+  search field wich works with http://new-ru.org/search/0/0/000/2/<searchtext>
+  displays result as magnet, title, size, peers as list
+  ads
+RutorParser v.1
+  several preset mirrors
+  ability to change url
+  frigate support
+  top tab
+RutorParser v.2
+  rutracker support  
+  
+  
+ 1) android open url AND parse html - Jsoup \ Intent or Url or DocumentBuilder + regexp
+ 2) display new generated html - WebView \ Html
+ 3) ads - https://firebase.google.com/docs/admob/android/quick-start
+  
+https://developer.android.com/reference/android/webkit/WebView.html
+http://stackoverflow.com/questions/2116162/how-to-display-html-in-textview
+http://developer.alexanderklimov.ru/android/library/jsoup.php
+https://developer.android.com/reference/android/content/Intent.html#Intent()
+http://stackoverflow.com/questions/2201917/how-can-i-open-a-url-in-androids-web-browser-from-my-application
+https://developer.android.com/reference/javax/xml/parsers/DocumentBuilder.html
+https://habrahabr.ru/sandbox/93869/
