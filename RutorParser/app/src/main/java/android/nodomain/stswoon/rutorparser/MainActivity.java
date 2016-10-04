@@ -15,6 +15,8 @@ import android.widget.Toast;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -86,9 +88,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private class MyTask extends AsyncTask<String, Void, Document> {
+    private class MyTask extends AsyncTask<Object, Void, Document> {
         @Override
-        protected Document doInBackground(String... params) {
+        protected Document doInBackground(Object... params) {
             Document doc = null;
             try {
                 doc = Jsoup.connect("http://new-ru.org/search/0/0/000/2/" + params[0]).get();
@@ -106,7 +108,25 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Document doc) {
             WebView result = (WebView) findViewById(R.id.webView);
-            result.loadData(doc.outerHtml(), "text/html", null);
+            if (false) {
+                String html = "<h1>Hello!</h1>";
+                html += "<a href='www.yandex.ru'>link</a>";
+                result.loadData(html, "text/html", null);
+            }
+            String html = "";
+            Elements elements = doc.select("div[id=index]").select("tr[class=gai]");
+            for (Element element : elements) {
+                String magnet = element.select("td").get(1).getAllElements().get(1).html();
+                String name = element.select("td").get(1).getAllElements().get(2).html();
+                String part = magnet + name + "</br>";
+                try {
+                    part = new String(part.getBytes(), "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                html += part;
+            }
+            result.loadData(html, "text/html", null);
         }
     }
 }
