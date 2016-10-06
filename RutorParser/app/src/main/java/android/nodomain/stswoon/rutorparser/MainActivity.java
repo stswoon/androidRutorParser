@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
     public void onSearchButtonClick(View v) {
         EditText search = (EditText) findViewById(R.id.editText);
         WebView result = (WebView) findViewById(R.id.webView);
+        result.loadData("Put 'film' in search", "text/html", null);
 
         String searchText = null;
         try {
@@ -116,9 +117,10 @@ public class MainActivity extends AppCompatActivity {
             String html = "";
             Elements elements = doc.select("div[id=index]").select("tr[class=gai]");
             for (Element element : elements) {
-                String magnet = element.select("td").get(1).getAllElements().get(1).html();
-                String name = element.select("td").get(1).getAllElements().get(2).html();
-                String part = magnet + name + "</br>";
+                String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
+                magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Download");
+                String name = element.select("td").get(1).select("a[href*=torrent]").html();
+                String part = magnet + "</br>" + name + "</br></br>";
                 try {
                     part = new String(part.getBytes(), "UTF-8");
                 } catch (UnsupportedEncodingException e) {
@@ -126,7 +128,20 @@ public class MainActivity extends AppCompatActivity {
                 }
                 html += part;
             }
-            result.loadData(html, "text/html", null);
+            if (elements.isEmpty()) {
+                html = "Nothing found";
+            }
+            html = "<!DOCTYPE html>\n" +
+                    "<html>\n" +
+                    "   <head>\n" +
+                    "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
+                    "      <title>HTML Document</title>\n" +
+                    "   </head>\n" +
+                    "   <body>\n" +
+                    html + "\n" +
+                    "  </body>\n" +
+                    "</html>\n";
+            result.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
         }
     }
 }
