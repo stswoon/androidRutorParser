@@ -20,7 +20,7 @@
         android:layout_alignParentEnd="true" />
 
     <Button
-        android:text="Search"
+        android:text="Поиск"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/button"
@@ -35,7 +35,7 @@
         android:inputType="textPersonName"
         android:ems="10"
         android:id="@+id/editText"
-        android:hint="Search Torrent"
+        android:hint="Введите имя торрента"
         android:layout_alignBaseline="@+id/button"
         android:layout_alignBottom="@+id/button"
         android:layout_alignParentLeft="true"

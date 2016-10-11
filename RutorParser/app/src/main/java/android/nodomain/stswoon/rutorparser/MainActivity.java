@@ -42,14 +42,34 @@ public class MainActivity extends AppCompatActivity {
 
         // Toasts the test ad message on the screen. Remove this after defining your own ad unit ID.
         Toast.makeText(this, TOAST_TEXT, Toast.LENGTH_LONG).show();
+
+
+        WebView result = (WebView) findViewById(R.id.webView);
+        String s = "1. Введите имя торента для поиска. </br> 2. Нажмите на кнопку Поиск. </br> 3. Будет выдан результат поиска с сайта Rutor в порядке убывания сидов.";
+        try {
+            s = new String(s.getBytes(), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        String html = "<!DOCTYPE html>\n" +
+                "<html>\n" +
+                "   <head>\n" +
+                "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
+                "      <title>HTML Document</title>\n" +
+                "   </head>\n" +
+                "   <body>\n" +
+                s + "\n" +
+                "  </body>\n" +
+                "</html>\n";
+        result.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
     }
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+        //getMenuInflater().inflate(R.menu.menu_main, menu);
+        return false;//true;
     }
 
     @Override
@@ -69,7 +89,25 @@ public class MainActivity extends AppCompatActivity {
     public void onSearchButtonClick(View v) {
         EditText search = (EditText) findViewById(R.id.editText);
         WebView result = (WebView) findViewById(R.id.webView);
-        result.loadData("Put 'film' in search", "text/html", null);
+
+
+        String s = "Пожалуйста, подождите, идет поиск...";
+        try {
+            s = new String(s.getBytes(), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        String html = "<!DOCTYPE html>\n" +
+                "<html>\n" +
+                "   <head>\n" +
+                "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
+                "      <title>HTML Document</title>\n" +
+                "   </head>\n" +
+                "   <body>\n" +
+                s + "\n" +
+                "  </body>\n" +
+                "</html>\n";
+        result.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
 
         String searchText = null;
         try {
@@ -82,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
         asyncTask.execute(searchText);
 
         if (false) {
-            String html = "<h1>Hello!</h1>";
+            html = "<h1>Hello!</h1>";
             html += "<a href='www.yandex.ru'>link</a>";
             result.loadData(html, "text/html", null);
         }
@@ -120,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
                 String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
                 magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Download");
                 String name = element.select("td").get(1).select("a[href*=torrent]").html();
-                String part = magnet + "</br>" + name + "</br></br>";
+                String part = magnet + "</br><span>" + name + "</span></br>";
                 try {
                     part = new String(part.getBytes(), "UTF-8");
                 } catch (UnsupportedEncodingException e) {
@@ -129,18 +167,55 @@ public class MainActivity extends AppCompatActivity {
                 html += part;
             }
             if (elements.isEmpty()) {
-                html = "Nothing found";
+                String s = "Ничего не найдено";
+                try {
+                    s = new String(s.getBytes(), "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                html = "<!DOCTYPE html>\n" +
+                        "<html>\n" +
+                        "   <head>\n" +
+                        "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
+                        "      <title>HTML Document</title>\n" +
+                        "   </head>\n" +
+                        "   <body>\n" +
+                        s + "\n" +
+                        "  </body>\n" +
+                        "</html>\n";
+
+            } else {
+                html = "<!DOCTYPE html>\n" +
+                        "<html>\n" +
+                        "   <head>\n" +
+                        "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
+                        "      <title>HTML Document</title>\n" +
+
+                        "  <style type=\"text/css\">\n" +
+                        "   a {\n" +
+                        "\tbackground-color: #4CAF50; /* Green */\n" +
+                        "    border: none;\n" +
+                        "    color: white;\n" +
+                        "    padding: 5px 32px;\n" +
+                        "    text-align: center;\n" +
+                        "    text-decoration: none;\n" +
+                        "    display: inline-block;\n" +
+                        "    font-size: 16px;\n" +
+                        "\tmargin-top: 5px;\n" +
+                        "   }\n" +
+                        "   span {\n" +
+                        "\tborder-radius: 0px 5px 5px 5px;\n" +
+                        "\tbackground-color: #00BFFF; /* Blue */\n" +
+                        "\tmargin: 5px;\n" +
+                        "   }\n" +
+                        "  </style>\n" +
+
+                        "   </head>\n" +
+                        "   <body>\n" +
+                        html + "\n" +
+                        "  </body>\n" +
+                        "</html>\n";
             }
-            html = "<!DOCTYPE html>\n" +
-                    "<html>\n" +
-                    "   <head>\n" +
-                    "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
-                    "      <title>HTML Document</title>\n" +
-                    "   </head>\n" +
-                    "   <body>\n" +
-                    html + "\n" +
-                    "  </body>\n" +
-                    "</html>\n";
             result.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
         }
     }
