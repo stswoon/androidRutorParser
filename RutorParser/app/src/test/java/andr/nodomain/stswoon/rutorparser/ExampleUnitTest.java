@@ -1,4 +1,4 @@
-package android.nodomain.stswoon.rutorparser;
+package andr.nodomain.stswoon.rutorparser;
 
 import org.junit.Test;
 

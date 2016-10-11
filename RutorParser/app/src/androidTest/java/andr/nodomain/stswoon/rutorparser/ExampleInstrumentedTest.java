@@ -1,4 +1,4 @@
-package android.nodomain.stswoon.rutorparser;
+package andr.nodomain.stswoon.rutorparser;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("android.nodomain.stswoon.rutorparser", appContext.getPackageName());
+        assertEquals("andr.nodomain.stswoon.rutorparser", appContext.getPackageName());
     }
 }

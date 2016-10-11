@@ -23,3 +23,7 @@ https://developer.android.com/reference/android/content/Intent.html#Intent()
 http://stackoverflow.com/questions/2201917/how-can-i-open-a-url-in-androids-web-browser-from-my-application
 https://developer.android.com/reference/javax/xml/parsers/DocumentBuilder.html
 https://habrahabr.ru/sandbox/93869/
+
+
+
+http://developer.alexanderklimov.ru/android/publish.php - выкладывание приложения
