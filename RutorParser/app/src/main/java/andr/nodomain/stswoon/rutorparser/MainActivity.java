@@ -2,6 +2,7 @@ package andr.nodomain.stswoon.rutorparser;
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -33,17 +34,22 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Load an ad into the AdMob banner view.
+        MobileAds.initialize(this, "ca-app-pub-1891256243789657~9263299320");
         AdView adView = (AdView) findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder()
                 .setRequestAgent("android_studio:ad_template").build();
         adView.loadAd(adRequest);
 
         // Toasts the test ad message on the screen. Remove this after defining your own ad unit ID.
-        Toast.makeText(this, TOAST_TEXT, Toast.LENGTH_LONG).show();
+        //Toast.makeText(this, TOAST_TEXT, Toast.LENGTH_LONG).show();
 
 
         WebView result = (WebView) findViewById(R.id.webView);
-        String s = "1. Введите имя торента для поиска. </br> 2. Нажмите на кнопку Поиск. </br> 3. Будет выдан результат поиска с сайта Rutor в порядке убывания сидов.";
+        String fludLink = "market://details?id=com.delphicoder.flud";//or https://play.google.com/store/apps/details?id=com.delphicoder.flud
+        String s = "1. Введите имя торента для поиска. </br> " +
+                "2. Нажмите на кнопку Поиск. </br> " +
+                "3. Будет выдан результат поиска с сайта Rutor в порядке убывания сидов. </br> " +
+                "4. Нажмите 'Скачать' (для скачивания долна быть установлен любой торрент-клиент, например <a href='" + fludLink + "'>Flud</a>)";
         try {
             s = new String(s.getBytes(), "UTF-8");
         } catch (UnsupportedEncodingException e) {
@@ -150,13 +156,27 @@ public class MainActivity extends AppCompatActivity {
                 html += "<a href='www.yandex.ru'>link</a>";
                 result.loadData(html, "text/html", null);
             }
+
+            if (doc == null) {
+                String s = "Ошибка сети.";
+                try {
+                    s = new String(s.getBytes(), "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                result.loadDataWithBaseURL(null, s, "text/html", "UTF-8", null);
+                return;
+            }
+
             String html = "";
             Elements elements = doc.select("div[id=index]").select("tr[class=gai]");
             for (Element element : elements) {
                 String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
-                magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Download");
+                magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Скачать");
                 String name = element.select("td").get(1).select("a[href*=torrent]").html();
-                String part = magnet + "</br><span>" + name + "</span></br>";
+                String size = element.select("td").get(3).html();
+                String part = magnet + "<span class='size'>" + size + "</span>";
+                part += "</br><span class='descr'>" + name + "</span></br>";
                 try {
                     part = new String(part.getBytes(), "UTF-8");
                 } catch (UnsupportedEncodingException e) {
@@ -165,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
                 html += part;
             }
             if (elements.isEmpty()) {
-                String s = "Ничего не найдено";
+                String s = "Ничего не найдено.";
                 try {
                     s = new String(s.getBytes(), "UTF-8");
                 } catch (UnsupportedEncodingException e) {
@@ -201,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
                         "    font-size: 16px;\n" +
                         "\tmargin-top: 5px;\n" +
                         "   }\n" +
-                        "   span {\n" +
+                        "   span.descr {\n" +
                         "\tborder-radius: 0px 5px 5px 5px;\n" +
                         "\tbackground-color: #00BFFF; /* Blue */\n" +
                         "\tmargin: 5px;\n" +
