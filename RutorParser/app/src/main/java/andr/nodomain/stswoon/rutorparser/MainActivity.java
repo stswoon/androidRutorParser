@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
         String s = "1. Введите имя торента для поиска. </br> " +
                 "2. Нажмите на кнопку Поиск. </br> " +
                 "3. Будет выдан результат поиска с сайта Rutor в порядке убывания сидов. </br> " +
-                "4. Нажмите 'Скачать' (для скачивания долна быть установлен любой торрент-клиент, например <a href='" + fludLink + "'>Flud</a>)";
+                "4. Нажмите 'Скачать' (для скачивания должен быть установлен любой торрент-клиент, например <a href='" + fludLink + "'>Flud</a>)";
         try {
             s = new String(s.getBytes(), "UTF-8");
         } catch (UnsupportedEncodingException e) {
@@ -169,12 +169,12 @@ public class MainActivity extends AppCompatActivity {
             }
 
             String html = "";
-            Elements elements = doc.select("div[id=index]").select("tr[class=gai]");
+            Elements elements = doc.select("div[id=index]").select("tr[class=gai], tr[class=tum]");
             for (Element element : elements) {
                 String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
                 magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Скачать");
                 String name = element.select("td").get(1).select("a[href*=torrent]").html();
-                String size = element.select("td").get(3).html();
+                String size = element.select("td").get(element.select("td").size()-2).html();
                 String part = magnet + "<span class='size'>" + size + "</span>";
                 part += "</br><span class='descr'>" + name + "</span></br>";
                 try {
