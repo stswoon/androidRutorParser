@@ -144,6 +144,17 @@ public class MainActivity extends AppCompatActivity {
                 //result.loadData(e.getMessage(), "text/html", null);
                 e.printStackTrace();
             }
+            if (doc == null) {
+                try {
+                    doc = Jsoup.connect("http://xrutor.org/search/0/0/000/2/" + params[0]).get();
+                } catch (IOException e) {
+                    //result.loadData(e.getMessage(), "text/html", null);
+                    e.printStackTrace();
+                } catch (Exception e) {
+                    //result.loadData(e.getMessage(), "text/html", null);
+                    e.printStackTrace();
+                }
+            }
             return doc;
         }
 
@@ -158,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (doc == null) {
-                String s = "Ошибка сети.";
+                String s = "Ошибка сети. Или возможно сайт rutor не доступен.";
                 try {
                     s = new String(s.getBytes(), "UTF-8");
                 } catch (UnsupportedEncodingException e) {
@@ -168,13 +179,24 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
+            boolean torrent = false;
             String html = "";
             Elements elements = doc.select("div[id=index]").select("tr[class=gai], tr[class=tum]");
             for (Element element : elements) {
                 String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
                 magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Скачать");
+                if (magnet.isEmpty()) {
+                    String href = element.select("td").get(1).select("a[href*=/parse/]").attr("href");
+                    magnet = element.select("td").get(1).select("a[href*=/parse/]").outerHtml();
+                    magnet = magnet.replaceFirst(href, "http://xrutor.org" + href);
+                    magnet = magnet.replaceFirst("<img src=\"/parse/s.rutor.org/i/d.gif\" alt=\"D\">", "Скачать torrent");
+                    if (!torrent) {
+                        torrent = true;
+                        html += "К сожалению основной сайт не доступен, а запасной сайт не поддерживает magnet ссылки. Поэтому после скачки torrent файла вам вероятно придется вручную добавить скаченный файл в torrent-client. Извините за неудобство. <br/>";
+                    }
+                }
                 String name = element.select("td").get(1).select("a[href*=torrent]").html();
-                String size = element.select("td").get(element.select("td").size()-2).html();
+                String size = element.select("td").get(element.select("td").size() - 2).html();
                 String part = magnet + "<span class='size'>" + size + "</span>";
                 part += "</br><span class='descr'>" + name + "</span></br>";
                 try {
