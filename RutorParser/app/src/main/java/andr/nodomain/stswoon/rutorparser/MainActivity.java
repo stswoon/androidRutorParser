@@ -4,9 +4,15 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 
+//import android.content.Intent;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,24 +27,90 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.logging.Logger;
 
 public class MainActivity extends AppCompatActivity {
-    // Remove the below line after defining your own ad unit ID.
-    private static final String TOAST_TEXT = "Test ads are being shown. "
-            + "To show live ads, replace the ad unit ID in res/values/strings.xml with your own ad unit ID.";
+    private static final String md5(final String s) {
+        try {
+            // Create MD5 Hash
+            MessageDigest digest = java.security.MessageDigest
+                    .getInstance("MD5");
+            digest.update(s.getBytes());
+            byte messageDigest[] = digest.digest();
 
+            // Create Hex String
+            StringBuffer hexString = new StringBuffer();
+            for (int i = 0; i < messageDigest.length; i++) {
+                String h = Integer.toHexString(0xFF & messageDigest[i]);
+                while (h.length() < 2)
+                    h = "0" + h;
+                hexString.append(h);
+            }
+            return hexString.toString();
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            //Logger.logStackTrace(TAG,e);
+        }
+        return "";
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        loadText();
         setContentView(R.layout.activity_main);
+
+        String deviceId = null;
+        if (false) { //http://stackoverflow.com/questions/4524752/how-can-i-get-device-id-for-admob
+            String android_id = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
+            deviceId = md5(android_id).toUpperCase();
+            //Log.v(TAG, "is Admob Test Device ? "+deviceId+" "+isTestDevice);
+        }
 
         // Load an ad into the AdMob banner view.
         MobileAds.initialize(this, "ca-app-pub-1891256243789657~9263299320");
-        AdView adView = (AdView) findViewById(R.id.adView);
+        final AdView adView = (AdView) findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder()
+                .addTestDevice("868243020016207") //http://stackoverflow.com/questions/9681400/android-get-device-id-for-admob
+                .addTestDevice("5619A35EB654725CC3114A234B8A4657") //http://stackoverflow.com/questions/4524752/how-can-i-get-device-id-for-admob
+//                .addTestDevice(deviceId)
                 .setRequestAgent("android_studio:ad_template").build();
         adView.loadAd(adRequest);
+
+
+
+        //http://stackoverflow.com/questions/23880516/disable-remove-ads-from-your-own-app-in-android
+        try {
+            final TelephonyManager tm = (TelephonyManager) getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
+            String deviceid = tm.getDeviceId(); //http://stackoverflow.com/questions/9681400/android-get-device-id-for-admob
+            if ("868243020016207".equals(deviceid)) { //todo check on different device in realease
+                final Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        timer.cancel();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                adView.setVisibility(View.GONE);
+                            }
+                        });
+                    }
+                }, 5000);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // Toasts the test ad message on the screen. Remove this after defining your own ad unit ID.
         //Toast.makeText(this, TOAST_TEXT, Toast.LENGTH_LONG).show();
@@ -71,9 +143,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        //getMenuInflater().inflate(R.menu.menu_main, menu);
-        return false;//true;
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
     }
 
     @Override
@@ -84,10 +155,59 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
+            //startActivity(new Intent(MainActivity.this, SettingActivity.class));
+            setContentView(R.layout.settings);
+            EditText url = (EditText) findViewById(R.id.torrentUrl);
+            if (torrentUrl != null && !torrentUrl.isEmpty()) {
+                url.setText(torrentUrl);
+            }
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public void onBtnSettingCancelClick(View v) {
+        EditText url = (EditText) findViewById(R.id.torrentUrl);
+        url.setText("");
+        setContentView(R.layout.activity_main);
+    }
+
+    public void onBtnSettingOkClick(View v) {
+        EditText url = (EditText) findViewById(R.id.torrentUrl);
+        torrentUrl = url.getText().toString();
+        torrentUrl = torrentUrl == null ? "" : torrentUrl;
+        saveUrl(torrentUrl);
+        stableUrl = null;
+        setContentView(R.layout.activity_main);
+    }
+
+    private SharedPreferences sPref;
+    private static final String TORRENT_URL = "torrentUrl";
+    private String torrentUrl = "";
+
+    private void saveUrl(String url) {
+        sPref = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor ed = sPref.edit();
+        ed.putString(TORRENT_URL, url);
+        ed.commit();
+        Toast.makeText(this, makeUtf8("Настройки сохранены"), Toast.LENGTH_SHORT).show();
+    }
+
+    private void loadText() {
+        sPref = getPreferences(MODE_PRIVATE);
+        String url = sPref.getString(TORRENT_URL, "");
+        torrentUrl = url;
+        torrentUrl = torrentUrl == null ? "" : torrentUrl;
+    }
+
+    private String makeUtf8(String s) {
+        try {
+            s = new String(s.getBytes(), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return s;
     }
 
     public void onSearchButtonClick(View v) {
@@ -120,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        AsyncTask asyncTask = new MyTask();
+        AsyncTask asyncTask = new MyTask(this);
         asyncTask.execute(searchText);
 
         if (false) {
@@ -130,37 +250,74 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private Document connect(String url) {
+        Document doc = null;
+        try {
+            doc = Jsoup.connect(url).get();
+        } catch (IOException e) {
+            //result.loadData(e.getMessage(), "text/html", null);
+            e.printStackTrace();
+        } catch (Exception e) {
+            //result.loadData(e.getMessage(), "text/html", null);
+            e.printStackTrace();
+        }
+        return doc;
+    }
+
+    private String stableUrl = null;
+    private List<String> urls = new ArrayList<String>() {{
+        add("http://rutor.org");
+        add("http://new-ru.org");
+        add("http://xrutor.org");
+    }};
 
     private class MyTask extends AsyncTask<Object, Void, Document> {
+        private MainActivity mainActivity;
+
+        public MyTask(MainActivity mainActivity) {
+            this.mainActivity = mainActivity;
+        }
+
         @Override
         protected Document doInBackground(Object... params) {
+            String postfix = "/search/0/0/000/2/" + params[0];
             Document doc = null;
-            try {
-                doc = Jsoup.connect("http://new-ru.org/search/0/0/000/2/" + params[0]).get();
-            } catch (IOException e) {
-                //result.loadData(e.getMessage(), "text/html", null);
-                e.printStackTrace();
-            } catch (Exception e) {
-                //result.loadData(e.getMessage(), "text/html", null);
-                e.printStackTrace();
-            }
-            if (doc == null) {
-                try {
-                    doc = Jsoup.connect("http://xrutor.org/search/0/0/000/2/" + params[0]).get();
-                } catch (IOException e) {
-                    //result.loadData(e.getMessage(), "text/html", null);
-                    e.printStackTrace();
-                } catch (Exception e) {
-                    //result.loadData(e.getMessage(), "text/html", null);
-                    e.printStackTrace();
+            if (stableUrl != null) {
+                doc = connect(stableUrl + postfix);
+                if (doc == null) {
+                    stableUrl = null;
+                } else {
+                    return doc;
                 }
             }
+
+            if (torrentUrl != null && !torrentUrl.isEmpty()) {
+                doc = connect(torrentUrl + postfix);
+                if (doc == null) {
+                    //Toast.makeText(mainActivity, makeUtf8("Не удалось загрузить данные по url из настроек"), Toast.LENGTH_SHORT).show();
+                } else {
+                    stableUrl = torrentUrl;
+                    return doc;
+                }
+            }
+
+            for (String url : urls) {
+                doc = connect(url + postfix);
+                if (doc != null) {
+                    stableUrl = url;
+                    return doc;
+                }
+            }
+
             return doc;
         }
 
 
         @Override
         protected void onPostExecute(Document doc) {
+            if (torrentUrl != null && !torrentUrl.isEmpty() && !stableUrl.equals(torrentUrl)) {
+                Toast.makeText(mainActivity, makeUtf8("Не удалось загрузить данные по url из настроек"), Toast.LENGTH_SHORT).show();
+            }
             WebView result = (WebView) findViewById(R.id.webView);
             if (false) {
                 String html = "<h1>Hello!</h1>";

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textPersonName"
+        android:hint="Torrent url, например http://rutor.org"
+        android:ems="10"
+        android:id="@+id/torrentUrl" />
+
+    <Button
+        android:text="Сохранить"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnSettingsOk"
+        android:onClick="onBtnSettingOkClick"/>
+
+    <Button
+        android:text="Отмена"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnSettingsCancel"
+        android:onClick="onBtnSettingCancelClick" />
+
+    <TextView
+        android:text="Иногда сайт и зеркала rutor отключаются. В таком случае приложение не сможет загрзить данные о торрентах. Если вы знаете рабочее зеркало на время отключения основных сайтов, то можете ввести адрес. "
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView" />
+</LinearLayout>

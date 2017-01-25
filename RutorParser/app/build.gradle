@@ -15,8 +15,8 @@ android {
         applicationId "andr.nodomain.stswoon.rutorparser"
         minSdkVersion 15
         targetSdkVersion 24
-        versionCode 4
-        versionName "1.1.2"
+        versionCode 5
+        versionName "1.2.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
