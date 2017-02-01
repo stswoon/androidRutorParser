@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -64,30 +65,16 @@ public class MainActivity extends AppCompatActivity {
         return "";
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        loadText();
-        setContentView(R.layout.activity_main);
-
-        String deviceId = null;
-        if (false) { //http://stackoverflow.com/questions/4524752/how-can-i-get-device-id-for-admob
-            String android_id = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
-            deviceId = md5(android_id).toUpperCase();
-            //Log.v(TAG, "is Admob Test Device ? "+deviceId+" "+isTestDevice);
-        }
+    private void loadAd(AdView inputAdView) {
+        final AdView adView = inputAdView == null ? (AdView) findViewById(R.id.adView) : inputAdView;
 
         // Load an ad into the AdMob banner view.
         MobileAds.initialize(this, "ca-app-pub-1891256243789657~9263299320");
-        final AdView adView = (AdView) findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder()
                 .addTestDevice("868243020016207") //http://stackoverflow.com/questions/9681400/android-get-device-id-for-admob
                 .addTestDevice("5619A35EB654725CC3114A234B8A4657") //http://stackoverflow.com/questions/4524752/how-can-i-get-device-id-for-admob
-//                .addTestDevice(deviceId)
                 .setRequestAgent("android_studio:ad_template").build();
         adView.loadAd(adRequest);
-
-
 
         //http://stackoverflow.com/questions/23880516/disable-remove-ads-from-your-own-app-in-android
         try {
@@ -111,10 +98,22 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
 
-        // Toasts the test ad message on the screen. Remove this after defining your own ad unit ID.
-        //Toast.makeText(this, TOAST_TEXT, Toast.LENGTH_LONG).show();
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        loadText();
+        setContentView(R.layout.activity_main);
 
+        String deviceId = null;
+        if (false) { //http://stackoverflow.com/questions/4524752/how-can-i-get-device-id-for-admob
+            String android_id = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
+            deviceId = md5(android_id).toUpperCase();
+            //Log.v(TAG, "is Admob Test Device ? "+deviceId+" "+isTestDevice);
+        }
+
+        loadAd(null);
 
         WebView result = (WebView) findViewById(R.id.webView);
         String fludLink = "market://details?id=com.delphicoder.flud";//or https://play.google.com/store/apps/details?id=com.delphicoder.flud
@@ -162,6 +161,15 @@ public class MainActivity extends AppCompatActivity {
                 url.setText(torrentUrl);
             }
             return true;
+        } else if (id == R.id.action_top) {
+            setContentView(R.layout.activity_top);
+            loadAd((AdView) findViewById(R.id.adTopView));
+            loadTop();
+            return true;
+        } else if (id == R.id.action_search) {
+            setContentView(R.layout.activity_main);
+            loadAd(null);
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -171,6 +179,7 @@ public class MainActivity extends AppCompatActivity {
         EditText url = (EditText) findViewById(R.id.torrentUrl);
         url.setText("");
         setContentView(R.layout.activity_main);
+        loadAd(null);
     }
 
     public void onBtnSettingOkClick(View v) {
@@ -180,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
         saveUrl(torrentUrl);
         stableUrl = null;
         setContentView(R.layout.activity_main);
+        loadAd(null);
     }
 
     private SharedPreferences sPref;
@@ -240,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        AsyncTask asyncTask = new MyTask(this);
+        AsyncTask asyncTask = new MyTask(this, false);
         asyncTask.execute(searchText);
 
         if (false) {
@@ -273,14 +283,19 @@ public class MainActivity extends AppCompatActivity {
 
     private class MyTask extends AsyncTask<Object, Void, Document> {
         private MainActivity mainActivity;
+        private boolean isTop;
 
-        public MyTask(MainActivity mainActivity) {
+        public MyTask(MainActivity mainActivity, boolean isTop) {
             this.mainActivity = mainActivity;
+            this.isTop = isTop;
         }
 
         @Override
         protected Document doInBackground(Object... params) {
             String postfix = "/search/0/0/000/2/" + params[0];
+            if (isTop) {
+                postfix = "/top";
+            }
             Document doc = null;
             if (stableUrl != null) {
                 doc = connect(stableUrl + postfix);
@@ -318,7 +333,12 @@ public class MainActivity extends AppCompatActivity {
             if (torrentUrl != null && !torrentUrl.isEmpty() && !stableUrl.equals(torrentUrl)) {
                 Toast.makeText(mainActivity, makeUtf8("Не удалось загрузить данные по url из настроек"), Toast.LENGTH_SHORT).show();
             }
-            WebView result = (WebView) findViewById(R.id.webView);
+            WebView result = isTop ? (WebView) findViewById(R.id.webTopView) : (WebView) findViewById(R.id.webView);
+            if (isTop) {
+                WebSettings webSettings = result.getSettings();
+                webSettings.setJavaScriptEnabled(true);
+            }
+
             if (false) {
                 String html = "<h1>Hello!</h1>";
                 html += "<a href='www.yandex.ru'>link</a>";
@@ -336,84 +356,252 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            boolean torrent = false;
             String html = "";
-            Elements elements = doc.select("div[id=index]").select("tr[class=gai], tr[class=tum]");
-            for (Element element : elements) {
-                String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
-                magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Скачать");
-                if (magnet.isEmpty()) {
-                    String href = element.select("td").get(1).select("a[href*=/parse/]").attr("href");
-                    magnet = element.select("td").get(1).select("a[href*=/parse/]").outerHtml();
-                    magnet = magnet.replaceFirst(href, "http://xrutor.org" + href);
-                    magnet = magnet.replaceFirst("<img src=\"/parse/s.rutor.org/i/d.gif\" alt=\"D\">", "Скачать torrent");
-                    if (!torrent) {
-                        torrent = true;
-                        html += "К сожалению основной сайт не доступен, а запасной сайт не поддерживает magnet ссылки. Поэтому после скачки torrent файла вам вероятно придется вручную добавить скаченный файл в torrent-client. Извините за неудобство. <br/>";
+            if (!isTop) {
+                boolean torrent = false;
+                Elements elements = doc.select("div[id=index]").select("tr[class=gai], tr[class=tum]");
+                for (Element element : elements) {
+                    String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
+                    magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Скачать");
+                    if (magnet.isEmpty()) {
+                        String href = element.select("td").get(1).select("a[href*=/parse/]").attr("href");
+                        magnet = element.select("td").get(1).select("a[href*=/parse/]").outerHtml();
+                        magnet = magnet.replaceFirst(href, "http://xrutor.org" + href);
+                        magnet = magnet.replaceFirst("<img src=\"/parse/s.rutor.org/i/d.gif\" alt=\"D\">", "Скачать torrent");
+                        if (!torrent) {
+                            torrent = true;
+                            html += "К сожалению основной сайт не доступен, а запасной сайт не поддерживает magnet ссылки. Поэтому после скачки torrent файла вам вероятно придется вручную добавить скаченный файл в torrent-client. Извините за неудобство. <br/>";
+                        }
                     }
+                    String name = element.select("td").get(1).select("a[href*=torrent]").html();
+                    String size = element.select("td").get(element.select("td").size() - 2).html();
+                    String part = magnet + "<span class='size'>" + size + "</span>";
+                    part += "</br><span class='descr'>" + name + "</span></br>";
+                    try {
+                        part = new String(part.getBytes(), "UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    html += part;
                 }
-                String name = element.select("td").get(1).select("a[href*=torrent]").html();
-                String size = element.select("td").get(element.select("td").size() - 2).html();
-                String part = magnet + "<span class='size'>" + size + "</span>";
-                part += "</br><span class='descr'>" + name + "</span></br>";
-                try {
-                    part = new String(part.getBytes(), "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                html += part;
-            }
-            if (elements.isEmpty()) {
-                String s = "Ничего не найдено.";
-                try {
-                    s = new String(s.getBytes(), "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                html = "<!DOCTYPE html>\n" +
-                        "<html>\n" +
-                        "   <head>\n" +
-                        "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
-                        "      <title>HTML Document</title>\n" +
-                        "   </head>\n" +
-                        "   <body>\n" +
-                        s + "\n" +
-                        "  </body>\n" +
-                        "</html>\n";
+                if (elements.isEmpty()) {
+                    String s = "Ничего не найдено.";
+                    try {
+                        s = new String(s.getBytes(), "UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    html = "<!DOCTYPE html>\n" +
+                            "<html>\n" +
+                            "   <head>\n" +
+                            "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
+                            "      <title>HTML Document</title>\n" +
+                            "   </head>\n" +
+                            "   <body>\n" +
+                            s + "\n" +
+                            "  </body>\n" +
+                            "</html>\n";
 
+                } else {
+                    html = "<!DOCTYPE html>\n" +
+                            "<html>\n" +
+                            "   <head>\n" +
+                            "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
+                            "      <title>HTML Document</title>\n" +
+
+                            "  <style type=\"text/css\">\n" +
+                            "   a {\n" +
+                            "\tbackground-color: #4CAF50; /* Green */\n" +
+                            "    border: none;\n" +
+                            "    color: white;\n" +
+                            "    padding: 5px 32px;\n" +
+                            "    text-align: center;\n" +
+                            "    text-decoration: none;\n" +
+                            "    display: inline-block;\n" +
+                            "    font-size: 16px;\n" +
+                            "\tmargin-top: 5px;\n" +
+                            "   }\n" +
+                            "   span.descr {\n" +
+                            "\tborder-radius: 0px 5px 5px 5px;\n" +
+                            "\tbackground-color: #00BFFF; /* Blue */\n" +
+                            "\tmargin: 5px;\n" +
+                            "   }\n" +
+                            "  </style>\n" +
+
+                            "   </head>\n" +
+                            "   <body>\n" +
+                            html + "\n" +
+                            "  </body>\n" +
+                            "</html>\n";
+                }
             } else {
-                html = "<!DOCTYPE html>\n" +
-                        "<html>\n" +
-                        "   <head>\n" +
-                        "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
-                        "      <title>HTML Document</title>\n" +
+                //todo switching from Snapshot to Host GPU - https://forum.ionicframework.com/t/ionic-app-crashing-only-on-android-emulator/33375
 
-                        "  <style type=\"text/css\">\n" +
-                        "   a {\n" +
-                        "\tbackground-color: #4CAF50; /* Green */\n" +
-                        "    border: none;\n" +
-                        "    color: white;\n" +
-                        "    padding: 5px 32px;\n" +
-                        "    text-align: center;\n" +
-                        "    text-decoration: none;\n" +
-                        "    display: inline-block;\n" +
-                        "    font-size: 16px;\n" +
-                        "\tmargin-top: 5px;\n" +
-                        "   }\n" +
-                        "   span.descr {\n" +
-                        "\tborder-radius: 0px 5px 5px 5px;\n" +
-                        "\tbackground-color: #00BFFF; /* Blue */\n" +
-                        "\tmargin: 5px;\n" +
-                        "   }\n" +
-                        "  </style>\n" +
+                String[] tableName = {"Топ 24", "Зарубежные фильмы", "Наши фильмы", "Науч.-поп. фильмы",
+                        "Сериалы", "Телевизор", "Мультипликация", "Аниме",
+                "Музыка", "Игры", "Софт", "Спорт и Здоровье",
+                        "Юмор", "Хозяйство и Быт", "Книги", "Другое"};
 
-                        "   </head>\n" +
-                        "   <body>\n" +
-                        html + "\n" +
-                        "  </body>\n" +
-                        "</html>\n";
+                String[] tableId = {"top24", "zarybFilm", "ourFilm", "naychFilm",
+                        "series", "tv", "mult", "anime",
+                        "music", "games", "soft", "sport",
+                        "humor", "hoz", "books", "other"};
+
+                boolean torrent = false;
+                Elements tables = doc.select("table");
+                int tableIndex = -1;
+                if (!tables.isEmpty())
+                for (int i = 1; i <= 16; ++i) {
+                    Element table = tables.get(i);
+                    tableIndex++;
+                    html += "<div id='div-"+tableId[tableIndex]+"' " + ((tableIndex==0) ? "class='visible'" : "") + ">";
+
+                    Elements elements = table.select("tr[class=gai], tr[class=tum]");
+                    for (Element element : elements) {
+                        String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
+                        magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Скачать");
+                        if (magnet.isEmpty()) {
+                            String href = element.select("td").get(1).select("a[href*=/parse/]").attr("href");
+                            magnet = element.select("td").get(1).select("a[href*=/parse/]").outerHtml();
+                            magnet = magnet.replaceFirst(href, "http://xrutor.org" + href);
+                            magnet = magnet.replaceFirst("<img src=\"/parse/s.rutor.org/i/d.gif\" alt=\"D\">", "Скачать torrent");
+                            if (!torrent) {
+                                torrent = true;
+                            }
+                        }
+                        String name = element.select("td").get(1).select("a[href*=torrent]").html();
+                        String size = element.select("td").get(element.select("td").size() - 2).html();
+                        String part = magnet + "<span class='size'>" + size + "</span>";
+                        part += "</br><span class='descr'>" + name + "</span></br>";
+                        try {
+                            part = new String(part.getBytes(), "UTF-8");
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }
+                        html += part;
+                    }
+
+                    html += "</div>";
+                }
+                if (tables.isEmpty()) {
+                    String s = makeUtf8("Ничего не найдено.");
+                    html = "<!DOCTYPE html>\n" +
+                            "<html>\n" +
+                            "   <head>\n" +
+                            "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
+                            "      <title>HTML Document</title>\n" +
+                            "   </head>\n" +
+                            "   <body>\n" +
+                            s + "\n" +
+                            "  </body>\n" +
+                            "</html>\n";
+                } else {
+                    if (torrent) {
+                        html = "К сожалению основной сайт не доступен, а запасной сайт не поддерживает magnet ссылки. Поэтому после скачки torrent файла вам вероятно придется вручную добавить скаченный файл в torrent-client. Извините за неудобство. <br/>" + html;
+                    }
+
+                    html = "<head>\n" +
+                            "  <style type=\"text/css\">\n" +
+                            "   a {\n" +
+                            "\tbackground-color: #4CAF50; /* Green */\n" +
+                            "    border: none;\n" +
+                            "    color: white;\n" +
+                            "    padding: 5px 32px;\n" +
+                            "    text-align: center;\n" +
+                            "    text-decoration: none;\n" +
+                            "    display: inline-block;\n" +
+                            "    font-size: 16px;\n" +
+                            "\tmargin-top: 5px;\n" +
+                            "   }\n" +
+                            "   span.descr {\n" +
+                            "\tborder-radius: 0px 5px 5px 5px;\n" +
+                            "\tbackground-color: #00BFFF; /* Blue */\n" +
+                            "\tmargin: 5px;\n" +
+                            "   }\n" +
+                            "   span.size {\t\n" +
+                            "   }\n" +
+                            "   .controll span {\n" +
+                            "\tbackground-color: #D3D3D3; /* Gray */\n" +
+                            "\tcursor: pointer;\t\n" +
+                            "\tpadding: 2px;\n" +
+                            "    margin: 2px;\n" +
+                            "\tdisplay: inline-block;" +
+                            "   }\n" +
+                            "   .controll span.active {\n" +
+                            "\tbackground-color: #006FFF; /* Gray */\n" +
+                            "   }\n" +
+                            "   .data div {\n" +
+                            "\tdisplay: none;\n" +
+                            "   }\n" +
+                            "   .data div.visible {\n" +
+                            "\tdisplay: block;\n" +
+                            "   }\n" +
+                            "  </style>\n" +
+                            "  <script>\n" +
+                            "\tfunction select(span) {\n" +
+                            "\t\tspanControll = document.getElementById(\"controll\");\n" +
+                            "\t\tfor (var i = 0; i < spanControll.children.length; ++i) {\n" +
+                            "\t\t\tspanControll.children[i].className = \"\";\n" +
+                            "\t\t}\n" +
+                            "\t\tspan.className = \"active\";\n" +
+                            "\t\t\n" +
+                            "\t\tdivData = document.getElementById(\"data\");\n" +
+                            "\t\tfor (var i = 0; i < divData.children.length; ++i) {\n" +
+                            "\t\t\tdivData.children[i].className = \"\";\n" +
+                            "\t\t}\n" +
+                            "\t\tvar divId = span.id.replace(\"span-\", \"div-\");\n" +
+                            "\t\tdocument.getElementById(divId).className = \"visible\";\n" +
+                            "\t}\n" +
+                            "  </script>\n" +
+                            "</head>\n" +
+                            "<body>\n" +
+                            "<div id=\"controll\" class=\"controll\">\n" +
+                            "\t<span class=\"active\" id=\"span-top24\" onclick=\"select(this)\">Топ 24</span> \n" +
+                            "\t<span id=\"span-zarybFilm\" onclick=\"select(this)\">Зарубежные фильмы</span> \n" +
+                            "\t<span id=\"span-ourFilm\" onclick=\"select(this)\">Наши фильмы</span> \n" +
+                            "\t<span id=\"span-naychFilm\" onclick=\"select(this)\">Науч.-поп. фильмы</span> \n" +
+                            "\t<span id=\"span-series\" onclick=\"select(this)\">Сериалы</span> \n" +
+                            "\t<span id=\"span-tv\" onclick=\"select(this)\">Телевизор</span> \n" +
+                            "\t<span id=\"span-mult\" onclick=\"select(this)\">Мультипликация</span> \n" +
+                            "\t<span id=\"span-anime\" onclick=\"select(this)\">Аниме</span> \n" +
+                            "\t<span id=\"span-music\" onclick=\"select(this)\">Музыка</span> \n" +
+                            "\t<span id=\"span-games\" onclick=\"select(this)\">Игры</span> \n" +
+                            "\t<span id=\"span-soft\" onclick=\"select(this)\">Софт</span> \n" +
+                            "\t<span id=\"span-sport\" onclick=\"select(this)\">Спорт и Здоровье</span> \n" +
+                            "\t<span id=\"span-humor\" onclick=\"select(this)\">Юмор</span> \n" +
+                            "\t<span id=\"span-hoz\" onclick=\"select(this)\">Хозяйство и Быт</span> \n" +
+                            "\t<span id=\"span-books\" onclick=\"select(this)\">Книги</span> \n" +
+                            "\t<span id=\"span-other\" onclick=\"select(this)\">Другое</span> \n" +
+                            "</div>\n" +
+                            "<hr>\n" +
+                            "<div id=\"data\" class=\"data\">\n" +
+                            html + "\n" +
+                            "</div>\n" +
+                            "</body>";
+                }
             }
+
             result.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
         }
+    }
+
+    private void loadTop() {
+        WebView result = (WebView) findViewById(R.id.webTopView);
+
+        String s = makeUtf8("Пожалуйста, подождите, идет поиск...");
+        String html = "<!DOCTYPE html>\n" +
+                "<html>\n" +
+                "   <head>\n" +
+                "      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" +
+                "      <title>HTML Document</title>\n" +
+                "   </head>\n" +
+                "   <body>\n" +
+                s + "\n" +
+                "  </body>\n" +
+                "</html>\n";
+        result.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
+
+        AsyncTask asyncTask = new MyTask(this, true);
+        asyncTask.execute("");
     }
 }

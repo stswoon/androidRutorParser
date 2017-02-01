@@ -1,7 +1,9 @@
 <resources>
     <string name="app_name">RutorParser</string>
 
+    <string name="action_top">Top</string>
     <string name="action_settings">Настройки</string>
+    <string name="action_search">Поиск</string>
 
     <string name="hello_world">Hello world!</string>
     <!-- -
