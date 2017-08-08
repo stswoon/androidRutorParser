@@ -39,6 +39,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Logger;
 
+//https://developer.android.com/studio/run/oem-usb.html do it before test on real devices
 public class MainActivity extends AppCompatActivity {
     private static final String md5(final String s) {
         try {
@@ -74,13 +75,15 @@ public class MainActivity extends AppCompatActivity {
                 .addTestDevice("868243020016207") //http://stackoverflow.com/questions/9681400/android-get-device-id-for-admob
                 .addTestDevice("5619A35EB654725CC3114A234B8A4657") //http://stackoverflow.com/questions/4524752/how-can-i-get-device-id-for-admob
                 .setRequestAgent("android_studio:ad_template").build();
-        adView.loadAd(adRequest);
+        adView.loadAd(adRequest);       //todo test device, feature
+
+        String android_id = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
 
         //http://stackoverflow.com/questions/23880516/disable-remove-ads-from-your-own-app-in-android
         try {
             final TelephonyManager tm = (TelephonyManager) getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
             String deviceid = tm.getDeviceId(); //http://stackoverflow.com/questions/9681400/android-get-device-id-for-admob
-            if ("868243020016207".equals(deviceid)) { //todo check on different device in realease
+            if ("868243020016207".equals(deviceid)) {
                 final Timer timer = new Timer();
                 timer.schedule(new TimerTask() {
                     @Override
@@ -118,9 +121,9 @@ public class MainActivity extends AppCompatActivity {
         WebView result = (WebView) findViewById(R.id.webView);
         String fludLink = "market://details?id=com.delphicoder.flud";//or https://play.google.com/store/apps/details?id=com.delphicoder.flud
         String s = "1. Введите имя торента для поиска. </br> " +
-                "2. Нажмите на кнопку Поиск. </br> " +
+                "2. Нажмите на кнопку 'Поиск'. </br> " +
                 "3. Будет выдан результат поиска с сайта Rutor в порядке убывания сидов. </br> " +
-                "4. Нажмите 'Скачать' (для скачивания должен быть установлен любой торрент-клиент, например <a href='" + fludLink + "'>Flud</a>)";
+                "4. Нажмите 'Скачать' (для скачивания должен быть установлен любой торрент-клиент, например <a href='" + fludLink + "'>Flud</a>).";
         try {
             s = new String(s.getBytes(), "UTF-8");
         } catch (UnsupportedEncodingException e) {
@@ -330,10 +333,18 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Document doc) {
-            if (torrentUrl != null && !torrentUrl.isEmpty() && !stableUrl.equals(torrentUrl)) {
+            if (torrentUrl != null && !torrentUrl.isEmpty() && !torrentUrl.equals(stableUrl)) {
                 Toast.makeText(mainActivity, makeUtf8("Не удалось загрузить данные по url из настроек"), Toast.LENGTH_SHORT).show();
             }
             WebView result = isTop ? (WebView) findViewById(R.id.webTopView) : (WebView) findViewById(R.id.webView);
+            if (result == null) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                result = isTop ? (WebView) findViewById(R.id.webTopView) : (WebView) findViewById(R.id.webView);
+            }
             if (isTop) {
                 WebSettings webSettings = result.getSettings();
                 webSettings.setJavaScriptEnabled(true);
@@ -373,9 +384,17 @@ public class MainActivity extends AppCompatActivity {
                             html += "К сожалению основной сайт не доступен, а запасной сайт не поддерживает magnet ссылки. Поэтому после скачки torrent файла вам вероятно придется вручную добавить скаченный файл в torrent-client. Извините за неудобство. <br/>";
                         }
                     }
+
                     String name = element.select("td").get(1).select("a[href*=torrent]").html();
                     String size = element.select("td").get(element.select("td").size() - 2).html();
                     String part = magnet + "<span class='size'>" + size + "</span>";
+
+                    String torrentUrlDetails = element.select("td").get(1).select("a[href*=torrent]").attr("href");
+                    if (torrentUrlDetails != null && !torrentUrlDetails.isEmpty()) {
+                        torrentUrlDetails = stableUrl + torrentUrlDetails;
+                        part += "<a class='detailsLink' href='" + torrentUrlDetails + "'>Подробнее</a>";
+                    }
+
                     part += "</br><span class='descr'>" + name + "</span></br>";
                     try {
                         part = new String(part.getBytes(), "UTF-8");
@@ -421,6 +440,11 @@ public class MainActivity extends AppCompatActivity {
                             "    font-size: 16px;\n" +
                             "\tmargin-top: 5px;\n" +
                             "   }\n" +
+                            "   a.detailsLink {\n" +
+                            "     background-color: white; \n" +
+                            "     color: #2108e0;\n" +
+                            "     text-decoration: underline;  \n" +
+                            "   }"+
                             "   span.descr {\n" +
                             "\tborder-radius: 0px 5px 5px 5px;\n" +
                             "\tbackground-color: #00BFFF; /* Blue */\n" +
@@ -452,7 +476,12 @@ public class MainActivity extends AppCompatActivity {
                 int tableIndex = -1;
                 if (!tables.isEmpty())
                 for (int i = 1; i <= 16; ++i) {
-                    Element table = tables.get(i);
+                    Element table;
+                    try {
+                        table = tables.get(i);
+                    } catch (IndexOutOfBoundsException e) {
+                        throw new RuntimeException("url=" + torrentUrl + "tables.size=" + tables.size(), e);
+                    }
                     tableIndex++;
                     html += "<div id='div-"+tableId[tableIndex]+"' " + ((tableIndex==0) ? "class='visible'" : "") + ">";
 
@@ -513,6 +542,11 @@ public class MainActivity extends AppCompatActivity {
                             "    font-size: 16px;\n" +
                             "\tmargin-top: 5px;\n" +
                             "   }\n" +
+                            "   a.detailsLink {\n" +
+                            "     background-color: white; \n" +
+                            "     color: #2108e0;\n" +
+                            "     text-decoration: underline;  \n" +
+                            "   }"+
                             "   span.descr {\n" +
                             "\tborder-radius: 0px 5px 5px 5px;\n" +
                             "\tbackground-color: #00BFFF; /* Blue */\n" +

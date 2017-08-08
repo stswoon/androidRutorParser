@@ -26,8 +26,8 @@
         android:onClick="onBtnSettingCancelClick" />
 
     <TextView
-        android:text="Иногда сайт и зеркала rutor отключаются. В таком случае приложение не сможет загрзить данные о торрентах. Если вы знаете рабочее зеркало на время отключения основных сайтов, то можете ввести адрес. "
+        android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/textView" />
+        android:text="Иногда сайт и зеркала Rutor отключаются. В таком случае приложение не сможет загрузить данные о торрентах. Если вы знаете рабочее зеркало на время отключения основных сайтов, то можете ввести адрес. " />
 </LinearLayout>
