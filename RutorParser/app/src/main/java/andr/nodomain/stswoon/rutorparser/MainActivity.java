@@ -69,15 +69,19 @@ public class MainActivity extends AppCompatActivity {
     private void loadAd(AdView inputAdView) {
         final AdView adView = inputAdView == null ? (AdView) findViewById(R.id.adView) : inputAdView;
 
+        if (false) {
+            //http://stackoverflow.com/questions/4524752/how-can-i-get-device-id-for-admob
+            String android_id = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
+            String deviceId = md5(android_id).toUpperCase();
+        }
+
         // Load an ad into the AdMob banner view.
         MobileAds.initialize(this, "ca-app-pub-1891256243789657~9263299320");
         AdRequest adRequest = new AdRequest.Builder()
                 .addTestDevice("868243020016207") //http://stackoverflow.com/questions/9681400/android-get-device-id-for-admob
-                .addTestDevice("5619A35EB654725CC3114A234B8A4657") //http://stackoverflow.com/questions/4524752/how-can-i-get-device-id-for-admob
+                .addTestDevice("28D42D8E394253AD6540E8E8B16311D6") //http://stackoverflow.com/questions/4524752/how-can-i-get-device-id-for-admob
                 .setRequestAgent("android_studio:ad_template").build();
-        adView.loadAd(adRequest);       //todo test device, feature
-
-        String android_id = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
+        adView.loadAd(adRequest);
 
         //http://stackoverflow.com/questions/23880516/disable-remove-ads-from-your-own-app-in-android
         try {
@@ -330,7 +334,6 @@ public class MainActivity extends AppCompatActivity {
             return doc;
         }
 
-
         @Override
         protected void onPostExecute(Document doc) {
             if (torrentUrl != null && !torrentUrl.isEmpty() && !torrentUrl.equals(stableUrl)) {
@@ -501,6 +504,13 @@ public class MainActivity extends AppCompatActivity {
                         String name = element.select("td").get(1).select("a[href*=torrent]").html();
                         String size = element.select("td").get(element.select("td").size() - 2).html();
                         String part = magnet + "<span class='size'>" + size + "</span>";
+
+                        String torrentUrlDetails = element.select("td").get(1).select("a[href*=torrent]").attr("href");
+                        if (torrentUrlDetails != null && !torrentUrlDetails.isEmpty()) {
+                            torrentUrlDetails = stableUrl + torrentUrlDetails;
+                            part += "<a class='detailsLink' href='" + torrentUrlDetails + "'>Подробнее</a>";
+                        }
+
                         part += "</br><span class='descr'>" + name + "</span></br>";
                         try {
                             part = new String(part.getBytes(), "UTF-8");
