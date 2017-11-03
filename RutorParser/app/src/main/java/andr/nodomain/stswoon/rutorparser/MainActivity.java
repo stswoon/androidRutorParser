@@ -1,10 +1,5 @@
 package andr.nodomain.stswoon.rutorparser;
 
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.MobileAds;
-
-//import android.content.Intent;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -12,7 +7,6 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,6 +14,10 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -31,16 +29,38 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.logging.Logger;
+
+//import android.content.Intent;
 
 //https://developer.android.com/studio/run/oem-usb.html do it before test on real devices
 public class MainActivity extends AppCompatActivity {
+
+    private String stableUrl = null;
+    private List<String> urls = new ArrayList<String>() {{
+        //only via vpn
+        add("http://rutor.org");
+
+        //no magnet on search and top
+        add("http://live-rutor.org");
+
+        //no magnet on search, no torrent and magnet on top
+        add("http://main-rutor.org");
+        add("http://therutor.org");
+        add("http://xn--c1avfbif.org");
+
+        //no magnet on search and top not worked
+        add("http://the-rutor.org");
+
+        //blocked
+        //add("http://new-ru.org");
+        //no magnet links
+        //add("http://xrutor.org");
+    }};
+
+
     private static final String md5(final String s) {
         try {
             // Create MD5 Hash
@@ -112,6 +132,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         loadText();
         setContentView(R.layout.activity_main);
+
+        Toast.makeText(this, makeUtf8("Скорее всего приложение в связи с блокировкой не сможет впредь функционировать нормально"), Toast.LENGTH_SHORT).show();
 
         String deviceId = null;
         if (false) { //http://stackoverflow.com/questions/4524752/how-can-i-get-device-id-for-admob
@@ -281,12 +303,7 @@ public class MainActivity extends AppCompatActivity {
         return doc;
     }
 
-    private String stableUrl = null;
-    private List<String> urls = new ArrayList<String>() {{
-        add("http://rutor.org");
-        add("http://new-ru.org");
-        add("http://xrutor.org");
-    }};
+
 
     private class MyTask extends AsyncTask<Object, Void, Document> {
         private MainActivity mainActivity;
@@ -377,11 +394,13 @@ public class MainActivity extends AppCompatActivity {
                 for (Element element : elements) {
                     String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
                     magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Скачать");
+                    magnet = magnet.replaceFirst("<img src=\"/yh/i/m.png\" alt=\"M\">", "Скачать");
                     if (magnet.isEmpty()) {
                         String href = element.select("td").get(1).select("a[href*=/parse/]").attr("href");
                         magnet = element.select("td").get(1).select("a[href*=/parse/]").outerHtml();
-                        magnet = magnet.replaceFirst(href, "http://xrutor.org" + href);
+                        magnet = magnet.replaceFirst(href, stableUrl + href);
                         magnet = magnet.replaceFirst("<img src=\"/parse/s.rutor.org/i/d.gif\" alt=\"D\">", "Скачать torrent");
+                        magnet = magnet.replaceFirst("<img src=\"/yh/i/d.gif\" alt=\"D\">", "Скачать torrent");
                         if (!torrent) {
                             torrent = true;
                             html += "К сожалению основной сайт не доступен, а запасной сайт не поддерживает magnet ссылки. Поэтому после скачки torrent файла вам вероятно придется вручную добавить скаченный файл в torrent-client. Извините за неудобство. <br/>";
@@ -407,7 +426,7 @@ public class MainActivity extends AppCompatActivity {
                     html += part;
                 }
                 if (elements.isEmpty()) {
-                    String s = "Ничего не найдено.";
+                    String s = "Ничего не найдено по запросу. Или сайт заблокирован.";
                     try {
                         s = new String(s.getBytes(), "UTF-8");
                     } catch (UnsupportedEncodingException e) {
@@ -436,7 +455,7 @@ public class MainActivity extends AppCompatActivity {
                             "\tbackground-color: #4CAF50; /* Green */\n" +
                             "    border: none;\n" +
                             "    color: white;\n" +
-                            "    padding: 5px 32px;\n" +
+                            "    padding: 5px 20px;\n" +
                             "    text-align: center;\n" +
                             "    text-decoration: none;\n" +
                             "    display: inline-block;\n" +
@@ -492,11 +511,13 @@ public class MainActivity extends AppCompatActivity {
                     for (Element element : elements) {
                         String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
                         magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Скачать");
+                        magnet = magnet.replaceFirst("<img src=\"/yh/i/m.png\" alt=\"M\">", "Скачать");
                         if (magnet.isEmpty()) {
                             String href = element.select("td").get(1).select("a[href*=/parse/]").attr("href");
                             magnet = element.select("td").get(1).select("a[href*=/parse/]").outerHtml();
-                            magnet = magnet.replaceFirst(href, "http://xrutor.org" + href);
+                            magnet = magnet.replaceFirst(href, stableUrl + href);
                             magnet = magnet.replaceFirst("<img src=\"/parse/s.rutor.org/i/d.gif\" alt=\"D\">", "Скачать torrent");
+                            magnet = magnet.replaceFirst("<img src=\"/yh/i/d.gif\" alt=\"D\">", "Скачать torrent");
                             if (!torrent) {
                                 torrent = true;
                             }
@@ -545,7 +566,7 @@ public class MainActivity extends AppCompatActivity {
                             "\tbackground-color: #4CAF50; /* Green */\n" +
                             "    border: none;\n" +
                             "    color: white;\n" +
-                            "    padding: 5px 32px;\n" +
+                            "    padding: 5px 20px;\n" +
                             "    text-align: center;\n" +
                             "    text-decoration: none;\n" +
                             "    display: inline-block;\n" +
