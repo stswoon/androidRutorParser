@@ -40,19 +40,23 @@ public class MainActivity extends AppCompatActivity {
 
     private String stableUrl = null;
     private List<String> urls = new ArrayList<String>() {{
-        //only via vpn
-        add("http://rutor.org");
+        //add("http://rutor.org");//only via vpn
 
-        //no magnet on search and top
-        add("http://live-rutor.org");
+        add("http://zarutor.org");
+        //add("http://browar.bz");
+        //add("http://live-rutor.eu");//http://live-rutor.eu/search/0/0/000/2/film
 
-        //no magnet on search, no torrent and magnet on top
-        add("http://main-rutor.org");
-        add("http://therutor.org");
-        add("http://xn--c1avfbif.org");
-
-        //no magnet on search and top not worked
-        add("http://the-rutor.org");
+//
+//        //no magnet on search and top
+//        add("http://live-rutor.org");
+//
+//        //no magnet on search, no torrent and magnet on top
+//        add("http://main-rutor.org");
+//        add("http://therutor.org");
+//        add("http://xn--c1avfbif.org");
+//
+//        //no magnet on search and top not worked
+//        add("http://the-rutor.org");
 
         //blocked
         //add("http://new-ru.org");
@@ -316,9 +320,9 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected Document doInBackground(Object... params) {
-            String postfix = "/search/0/0/000/2/" + params[0];
+            String postfix = "/search/0/0/0/2/" +  params[0];
             if (isTop) {
-                postfix = "/top";
+                postfix = "/top?p=7d";
             }
             Document doc = null;
             if (stableUrl != null) {
@@ -396,11 +400,12 @@ public class MainActivity extends AppCompatActivity {
                     magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Скачать");
                     magnet = magnet.replaceFirst("<img src=\"/yh/i/m.png\" alt=\"M\">", "Скачать");
                     if (magnet.isEmpty()) {
-                        String href = element.select("td").get(1).select("a[href*=/parse/]").attr("href");
-                        magnet = element.select("td").get(1).select("a[href*=/parse/]").outerHtml();
-                        magnet = magnet.replaceFirst(href, stableUrl + href);
-                        magnet = magnet.replaceFirst("<img src=\"/parse/s.rutor.org/i/d.gif\" alt=\"D\">", "Скачать torrent");
-                        magnet = magnet.replaceFirst("<img src=\"/yh/i/d.gif\" alt=\"D\">", "Скачать torrent");
+                        String href = element.select("td").get(1).select("a[href*=/torrent/]").attr("href");
+                        magnet = "<a href='" + stableUrl + href + "'>Скачать torrent</a>";
+                        //magnet = element.select("td").get(1).select("a[href*=/torrent/]").outerHtml();
+                        //magnet = magnet.replaceFirst(href, stableUrl + href);
+                        //magnet = magnet.replaceFirst("<img src=\"/parse/s.rutor.org/i/d.gif\" alt=\"D\">", "Скачать torrent");
+                        //magnet = magnet.replaceFirst("<img src=\"/yh/i/d.gif\" alt=\"D\">", "Скачать torrent");
                         if (!torrent) {
                             torrent = true;
                             html += "К сожалению основной сайт не доступен, а запасной сайт не поддерживает magnet ссылки. Поэтому после скачки torrent файла вам вероятно придется вручную добавить скаченный файл в torrent-client. Извините за неудобство. <br/>";
@@ -484,20 +489,20 @@ public class MainActivity extends AppCompatActivity {
                 //todo switching from Snapshot to Host GPU - https://forum.ionicframework.com/t/ionic-app-crashing-only-on-android-emulator/33375
 
                 String[] tableName = {"Топ 24", "Зарубежные фильмы", "Наши фильмы", "Науч.-поп. фильмы",
-                        "Сериалы", "Телевизор", "Мультипликация", "Аниме",
-                "Музыка", "Игры", "Софт", "Спорт и Здоровье",
-                        "Юмор", "Хозяйство и Быт", "Книги", "Другое"};
+                        "Сериалы", "Мультипликация", "Игры", "Аниме",
+                "Музыка", "Софт", "TB", "Спорт и Здоровье",
+                        "Юмор", /*"Хозяйство и Быт",*/ "Книги", "Другое"};
 
                 String[] tableId = {"top24", "zarybFilm", "ourFilm", "naychFilm",
-                        "series", "tv", "mult", "anime",
-                        "music", "games", "soft", "sport",
-                        "humor", "hoz", "books", "other"};
+                        "series", "mult", "games", "anime",
+                        "music", "soft", "tv", "sport",
+                        "humor", /*"hoz",*/ "books", "other"};
 
                 boolean torrent = false;
                 Elements tables = doc.select("table");
                 int tableIndex = -1;
                 if (!tables.isEmpty())
-                for (int i = 1; i <= 16; ++i) {
+                for (int i = 1; i <= 15; ++i) {
                     Element table;
                     try {
                         table = tables.get(i);
@@ -507,11 +512,12 @@ public class MainActivity extends AppCompatActivity {
                     tableIndex++;
                     html += "<div id='div-"+tableId[tableIndex]+"' " + ((tableIndex==0) ? "class='visible'" : "") + ">";
 
-                    Elements elements = table.select("tr[class=gai], tr[class=tum]");
+                    Elements elements = table.select("tr[class=gaitum], tr[class=tum]");
                     for (Element element : elements) {
                         String magnet = element.select("td").get(1).select("a[href*=magnet]").outerHtml();
                         magnet = magnet.replaceFirst("<img src=\"/s/i/m.png\" alt=\"M\">", "Скачать");
                         magnet = magnet.replaceFirst("<img src=\"/yh/i/m.png\" alt=\"M\">", "Скачать");
+                        magnet = magnet.replaceFirst("<img src=\"/parse/s.rutor.org/i/m.png\" alt=\"M\">", "Скачать");
                         if (magnet.isEmpty()) {
                             String href = element.select("td").get(1).select("a[href*=/parse/]").attr("href");
                             magnet = element.select("td").get(1).select("a[href*=/parse/]").outerHtml();
@@ -634,7 +640,7 @@ public class MainActivity extends AppCompatActivity {
                             "\t<span id=\"span-soft\" onclick=\"select(this)\">Софт</span> \n" +
                             "\t<span id=\"span-sport\" onclick=\"select(this)\">Спорт и Здоровье</span> \n" +
                             "\t<span id=\"span-humor\" onclick=\"select(this)\">Юмор</span> \n" +
-                            "\t<span id=\"span-hoz\" onclick=\"select(this)\">Хозяйство и Быт</span> \n" +
+//                            "\t<span id=\"span-hoz\" onclick=\"select(this)\">Хозяйство и Быт</span> \n" +
                             "\t<span id=\"span-books\" onclick=\"select(this)\">Книги</span> \n" +
                             "\t<span id=\"span-other\" onclick=\"select(this)\">Другое</span> \n" +
                             "</div>\n" +
