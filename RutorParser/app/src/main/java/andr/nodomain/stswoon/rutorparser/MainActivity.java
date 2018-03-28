@@ -42,7 +42,8 @@ public class MainActivity extends AppCompatActivity {
     private List<String> urls = new ArrayList<String>() {{
         //add("http://rutor.org");//only via vpn
 
-        add("http://zarutor.org");
+        add("http://prutor.org");
+        //add("http://zarutor.org");
         //add("http://browar.bz");
         //add("http://live-rutor.eu");//http://live-rutor.eu/search/0/0/000/2/film
 
