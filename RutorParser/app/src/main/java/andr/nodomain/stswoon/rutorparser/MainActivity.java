@@ -42,7 +42,8 @@ public class MainActivity extends AppCompatActivity {
     private List<String> urls = new ArrayList<String>() {{
         //add("http://rutor.org");//only via vpn
 
-        add("http://prutor.org");
+        add("http://s.new-rutor.org");
+        //filmadd("http://ru-tor.biz");
         //add("http://zarutor.org");
         //add("http://browar.bz");
         //add("http://live-rutor.eu");//http://live-rutor.eu/search/0/0/000/2/film
@@ -155,6 +156,10 @@ public class MainActivity extends AppCompatActivity {
                 "2. Нажмите на кнопку 'Поиск'. </br> " +
                 "3. Будет выдан результат поиска с сайта Rutor в порядке убывания сидов. </br> " +
                 "4. Нажмите 'Скачать' (для скачивания должен быть установлен любой торрент-клиент, например <a href='" + fludLink + "'>Flud</a>).";
+        s = "Очень часто закрывают сайты, а свободного времени оперативно исправвлять ошики нет, " +
+                "поэтому это, возможно, последняя рабочая версия, кому нужно вот код - " +
+                "https://github.com/stswoon/androidRutorParser, правда он не качественный, т.к. все время ушло на борьбу с сайтами." +
+                "</br></br>Спасибо, что выбирали мой продукт.</br></br>" + s;
         try {
             s = new String(s.getBytes(), "UTF-8");
         } catch (UnsupportedEncodingException e) {
